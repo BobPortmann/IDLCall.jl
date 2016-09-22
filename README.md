@@ -18,7 +18,7 @@ how it works).
 - OSX: set DYLD_FALLBACK_LIBRARY_PATH="/Applications/exelis/idl/bin/bin.darwin.x86_64"
   in shell before starting julia.
 - Linux: push!(Libdl.DL_LOAD_PATH, "/path/to/idl/libs") in julia?
-- Windows: ?
+- Windows: Same as Linux?
 
 IDL can be called using either the `RPC` or `Callable` interfaces. On windows only the `Callable`
 interface is available. To use the `RPC` interface you must run `idlrpc` in a shell before
@@ -27,14 +27,14 @@ to force the use of that interface. Note that by default IDLCall uses the `RPC` 
 on OSX and Linux and `Callable` on Windows. The biggest difference between these is that:
 
 - `Callable` IDL runs in one program space and thus arrays can be shared between julia and idl.
-  In `RPC` all arrays are copied. Note that I have run into issues with IDL loading DLM's while
-  using `Callable` (e.g., NetCDF).
+  In `RPC` all arrays are copied between processes. Note that I have run into issues with IDL
+  loading DLM's while using `Callable` (e.g., NetCDF).
 
 - The IDL `RPC` program runs independently of the julia process (e.g., julia
   can be restarted without killing the IDL RPC process). Note that you must start the
   `RPC` process in a shell using `idlrpc` command before starting IDLCall.
 
-- IDL-RPC is not supported on windows
+- IDL `RPC` is not supported on windows
 
 ## Quickstart
 
@@ -61,15 +61,21 @@ You can run an arbitrary chunk of code in IDL using
 ```
 idl.execute("any valid idl code")
 ```
+Note that only primitve data types are supported at this time (e.g., structure variables
+are not supported yet).
 
-Alternatively, you can drop into an IDL REPL by typing  `>` at the julia prompt. Then
-you can type any valid IDL commands, including using continuation characters `$`. One
-experimental feature I have added is the use of `%var` will auto-magically import the
-julia variable `var` into the IDL process. This works at the IDL prompt or in strings
-passed into the `execute` function.
+## REPL
+
+You can drop into an IDL REPL by typing `>` at the julia prompt. Then you can type any valid
+IDL commands, including using continuation characters `$` for multi-line commands. One
+experimental feature I have added is the use of `%var` will auto-magically import the julia
+variable `var` into the IDL process. This works at the IDL prompt or in strings passed into the
+`execute` function.
 
 ## ToDo
 
 - Add tests
 
 - Make more flexible to install on all platforms
+
+- Add more variable types to be transfered between julia and IDL.

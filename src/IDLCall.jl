@@ -3,6 +3,13 @@ module IDLCall
 
 using Compat
 
+# Find IDL library directory if on macOS or Linux
+if is_unix()
+    idl_dir = dirname(chomp(readstring(`which idl`)))
+    idl_lib = chomp(readstring(`bash -c "ls -d $(idl_dir)/bin.*"`))
+    push!(Libdl.DL_LOAD_PATH, idl_lib)
+end
+
 export init, get_var, put_var, execute, @get_var, @put_var, idl_repl
 
 jl_idl_type = get(ENV, "JL_IDL_TYPE", is_windows() ? "CALLABLE" : "RPC")

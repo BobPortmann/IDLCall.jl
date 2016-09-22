@@ -23,15 +23,16 @@ how it works).
 IDL can be called using either the `RPC` or `Callable` interfaces. On windows only the `Callable`
 interface is available. To use the `RPC` interface you must run `idlrpc` in a shell before
 starting `IDLCall`. You can set the environmental variable `JL_IDL_TYPE` to `RPC` or `CALLABLE`
-to force the use of that interface. Note that by default IDLCall using the RPC interface
-on OSX and Linux and Callable on Windows. The biggest difference between these is that:
+to force the use of that interface. Note that by default IDLCall uses the `RPC` interface
+on OSX and Linux and `Callable` on Windows. The biggest difference between these is that:
 
-- Callable IDL runs in one program space and thus arrays can be shared between julia and idl.
-  In IDL RPC all arrays are copied. I have run into issues with IDL loading DLM's while
-  using Callable.
+- `Callable` IDL runs in one program space and thus arrays can be shared between julia and idl.
+  In `RPC` all arrays are copied. Note that I have run into issues with IDL loading DLM's while
+  using `Callable` (e.g., NetCDF).
 
-- The IDL RPC program runs independently of the julia process (e.g., julia
-  can be restarted without killing the IDL RPC process).
+- The IDL `RPC` program runs independently of the julia process (e.g., julia
+  can be restarted without killing the IDL RPC process). Note that you must start the
+  `RPC` process in a shell using `idlrpc` command before starting IDLCall.
 
 - IDL-RPC is not supported on windows
 
@@ -49,7 +50,7 @@ Then you can add a julia variable to the IDL process with
 idl.put_var(x, "x")
 ```
 
-and you can retrieve variable using
+and you can retrieve variable into julia using
 
 ```
 x = idl.get_var("x")
@@ -64,7 +65,8 @@ idl.execute("any valid idl code")
 Alternatively, you can drop into an IDL REPL by typing  `>` at the julia prompt. Then
 you can type any valid IDL commands, including using continuation characters `$`. One
 experimental feature I have added is the use of `%var` will auto-magically import the
-julia variable `var` into the IDL process.
+julia variable `var` into the IDL process. This works at the IDL prompt or in strings
+passed into the `execute` function.
 
 ## ToDo
 

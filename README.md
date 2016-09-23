@@ -17,7 +17,7 @@ how it works).
 
 - OSX: set DYLD_FALLBACK_LIBRARY_PATH="/Applications/exelis/idl/bin/bin.darwin.x86_64"
   in shell before starting julia.
-- Linux: push!(Libdl.DL_LOAD_PATH, "/path/to/idl/libs") in julia?
+- Linux: Automatically found in julia
 - Windows: Same as Linux?
 
 IDL can be called using either the `RPC` or `Callable` interfaces. On windows only the `Callable`
@@ -61,7 +61,7 @@ You can run an arbitrary chunk of code in IDL using
 ```
 idl.execute("any valid idl code")
 ```
-Note that only primitve data types are supported at this time (e.g., structure variables
+Note that only primitive data types are supported at this time (e.g., structure variables
 are not supported yet).
 
 ## REPL
@@ -78,4 +78,4 @@ variable `var` into the IDL process. This works at the IDL prompt or in strings 
 
 - Make more flexible to install on all platforms
 
-- Add more variable types to be transfered between julia and IDL.
+- Add more variable types to be transferred between julia and IDL.

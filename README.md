@@ -18,7 +18,7 @@ how it works).
 - OSX: set DYLD_FALLBACK_LIBRARY_PATH="/Applications/exelis/idl/bin/bin.darwin.x86_64"
   in shell before starting julia.
 - Linux: Automatically found in julia
-- Windows: Same as Linux?
+- Windows: ???
 
 IDL can be called using either the `RPC` or `Callable` interfaces. On windows only the `Callable`
 interface is available. To use the `RPC` interface you must run `idlrpc` in a shell before

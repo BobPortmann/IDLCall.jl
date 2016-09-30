@@ -6,27 +6,65 @@ include("common-macros.jl")
 # name of IDL lib
 const idlrpc = "libidl_rpc"
 
-# RPC client ("opaque structure")
-pclient = C_NULL
+# RPC client
+type RPCclient
+    ptr::Ptr{Void}
+    process::Union{Void,Base.Process}
+end
+RPCclient() = RPCclient(C_NULL,nothing)
+RPCclient(ptr::Ptr{Void}) = RPCclient(ptr,nothing)
 
-function set_pclient(pc)
-    global pclient = pc
+pclient = RPCclient()
+
+function rpc_init()
+    ccall((:IDL_RPCInit, idlrpc), Ptr{Void}, (Clong, Ptr{UInt8}), 0, C_NULL)
 end
 
 function init()
-    global pclient = ccall((:IDL_RPCInit, idlrpc), Ptr{Void}, (Clong, Ptr{UInt8}), 0, C_NULL)
-    if pclient == C_NULL
-        error("IDL.init: IDLRPC init failed; Did you start idlrpc")
+    olderr = STDERR
+    (rd,wr) = redirect_stderr() #Redirect error messages
+    ptr = rpc_init()
+    if ptr != C_NULL #Check if idlrpc is already running
+        global pclient = RPCclient(ptr)
+    else #Start up idlrpc
+        print("Initializing IDL ")
+        proc = spawn(`idlrpc`)
+        ptr = C_NULL
+        cnt = 0
+        while ptr == C_NULL && cnt < 60 #Allow for startup time
+            ptr = rpc_init()
+            cnt = cnt + 1
+            sleep(1)
+            print(".")
+        end
+        println("")
+        ptr == C_NULL && error("IDL.init: IDLRPC init failed")
+        global pclient = RPCclient(ptr, proc)
     end
     capture(true)
+    redirect_stderr(olderr)
 end
+
+function cleanup()
+    ecode = ccall((:IDL_RPCCleanup, idlrpc), Cint, (Ptr{Void},Cint), pclient.ptr, 1)
+    if ecode != 1
+        error("IDL.exit: failed")
+    end
+    if pclient.process != nothing
+        kill(pclient.process)
+    end
+    return
+end
+
+#Register cleanup function to be called at exit
+atexit(cleanup)
 
 function execute_converted(str::AbstractString)
     # does no conversion of interpolated vars, continuation chars, or newlines
-    ecode = ccall((:IDL_RPCExecuteStr, idlrpc), Cint, (Ptr{Void},Ptr{UInt8}), pclient, str)
+    ecode = ccall((:IDL_RPCExecuteStr, idlrpc), Cint, (Ptr{Void},Ptr{UInt8}), pclient.ptr, str)
     if ecode != 1
         # since error get printed by IDL, we just reset error state
-        ecode = ccall((:IDL_RPCExecuteStr, idlrpc), Cint, (Ptr{Void},Ptr{UInt8}), pclient,
+        ecode = ccall((:IDL_RPCExecuteStr, idlrpc), Cint, (Ptr{Void},Ptr{UInt8}), pclient.ptr,
                       "message, /RESET")
         flush()
         return false
@@ -37,7 +75,7 @@ end
 
 function capture(flag::Bool)
     nlines = flag ? 5000 : 0
-    ecode = ccall((:IDL_RPCOutputCapture, idlrpc), Cint, (Ptr{Void}, Cint), pclient, nlines)
+    ecode = ccall((:IDL_RPCOutputCapture, idlrpc), Cint, (Ptr{Void}, Cint), pclient.ptr, nlines)
     if ecode != 1
         error("IDL.capture: IDL_RPCOutputCapture failed")
     end
@@ -46,7 +84,7 @@ end
 
 function get_output!(line_s::IDL_RPC_LINE_S)
     ecode = ccall((:IDL_RPCOutputGetStr, idlrpc), Cint, (Ptr{Void},Ref{IDL_RPC_LINE_S},Cint),
-                  pclient, line_s, 0)
+                  pclient.ptr, line_s, 0)
     ecode == 1 ? true : false
 end
 
@@ -59,14 +97,6 @@ function flush()
         println(unsafe_string(line_s.buf))
         flag_set(line_s.flags, IDL_TOUT_F_NLPOST) && print("\n")
     end
-end
-
-function exit()
-    ecode = ccall((:IDL_RPCCleanup, idlrpc), Cint, (Ptr{Void},Cint), pclient, 1)
-    if ecode != 1
-        error("IDL.exit: failed")
-    end
-    return
 end
 
 # no free_cb needed in idlrpc (I think)
@@ -87,7 +117,7 @@ function put_var{T,N}(arr::Array{T,N}, name::AbstractString)
                  N, dim, idl_type(arr), arr, free_cb)
     ecode = ccall((:IDL_RPCSetVariable, idlrpc), Cint,
                   (Ptr{Void}, Ptr{UInt8}, Ptr{IDL_Variable}),
-                  pclient, name, vptr)
+                  pclient.ptr, name, vptr)
     if ecode != 1
         error("IDL.put_var: failed")
     end
@@ -119,7 +149,7 @@ function put_var(x, name::AbstractString)
           vptr, idl_type(x), Ref{UInt128}(convert(UInt128,reinterpret(uint_size(x),x))))
     ecode = ccall((:IDL_RPCSetVariable, idlrpc), Cint,
                   (Ptr{Void}, Ptr{UInt8}, Ptr{IDL_Variable}),
-                  pclient, name, vptr)
+                  pclient.ptr, name, vptr)
     return
 end
 
@@ -136,7 +166,7 @@ function put_var{T}(x::Complex{T}, name::AbstractString)
           vptr, idl_type(x), Ref{UInt128}(y))
     ecode = ccall((:IDL_RPCSetVariable, idlrpc), Cint,
                   (Ptr{Void}, Ptr{UInt8}, Ptr{IDL_Variable}),
-                  pclient, name, vptr)
+                  pclient.ptr, name, vptr)
     return
 end
 
@@ -152,7 +182,7 @@ function put_var(str::AbstractString, name::AbstractString)
           idl_string, str)
     ecode = ccall((:IDL_RPCSetVariable, idlrpc), Cint,
                   (Ptr{Void}, Ptr{UInt8}, Ptr{IDL_Variable}),
-                  pclient, name, vptr)
+                  pclient.ptr, name, vptr)
     if ecode != 1
         error("IDL.put_var: failed")
     end
@@ -167,12 +197,12 @@ end
 function get_vptr(name::AbstractString)
     # returns C_NULL if name not in scope
     ccall((:IDL_RPCGetMainVariable, idlrpc), Ptr{IDL_Variable}, (Ptr{Void},Ptr{UInt8}),
-          pclient, name)
+          pclient.ptr, name)
 end
 
 function get_var(name::AbstractString)
     vptr = ccall((:IDL_RPCGetMainVariable, idlrpc), Ptr{IDL_Variable}, (Ptr{Void},Ptr{UInt8}),
-                 pclient, name)
+                 pclient.ptr, name)
     # NOTE: IDL_RPCGetVariable never seems to return NULL in spite of docs
     if vptr == C_NULL
         error("IDL.get_var: variable $name does not exist")

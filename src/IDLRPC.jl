@@ -21,7 +21,7 @@ function rpc_init()
 end
 
 function rpc_cleanup()
-    ecode = ccall((:IDL_RPCCleanup, idlrpc), Cint, (Ptr{Void}, Cint), pclient.ptr, 1)
+    ecode = ccall((:IDL_RPCCleanup, idlrpc), Cint, (Ptr{Void}, Cint), pclient.ptr, 0)
     if ecode != 1
         error("IDL.exit: failed")
     end
@@ -51,11 +51,11 @@ function init()
         println("")
         ptr == C_NULL && error("IDL.init: IDLRPC init failed")
         global pclient = RPCclient(ptr, proc)
-        #Register cleanup function to be called at exit
-        atexit(rpc_cleanup)
     end
     capture(true)
     redirect_stderr(olderr)
+    #Register cleanup function to be called at exit
+    atexit(rpc_cleanup)
 end
 
 function execute_converted(str::AbstractString)

@@ -9,10 +9,10 @@ const idlrpc = "libidl_rpc"
 # RPC client
 type RPCclient
     ptr::Ptr{Void}
-    process::Union{Void,Base.Process}
+    process::Union{Void, Base.Process}
 end
-RPCclient() = RPCclient(C_NULL,nothing)
-RPCclient(ptr::Ptr{Void}) = RPCclient(ptr,nothing)
+RPCclient() = RPCclient(C_NULL, nothing)
+RPCclient(ptr::Ptr{Void}) = RPCclient(ptr, nothing)
 
 pclient = RPCclient()
 
@@ -20,9 +20,20 @@ function rpc_init()
     ccall((:IDL_RPCInit, idlrpc), Ptr{Void}, (Clong, Ptr{UInt8}), 0, C_NULL)
 end
 
+function rpc_cleanup()
+    ecode = ccall((:IDL_RPCCleanup, idlrpc), Cint, (Ptr{Void}, Cint), pclient.ptr, 1)
+    if ecode != 1
+        error("IDL.exit: failed")
+    end
+    if pclient.process != nothing
+        kill(pclient.process)
+    end
+    return
+end
+
 function init()
     olderr = STDERR
-    (rd,wr) = redirect_stderr() #Redirect error messages
+    (rd, wr) = redirect_stderr() #Redirect error messages
     ptr = rpc_init()
     if ptr != C_NULL #Check if idlrpc is already running
         global pclient = RPCclient(ptr)
@@ -40,24 +51,12 @@ function init()
         println("")
         ptr == C_NULL && error("IDL.init: IDLRPC init failed")
         global pclient = RPCclient(ptr, proc)
+        #Register cleanup function to be called at exit
+        atexit(rpc_cleanup)
     end
     capture(true)
     redirect_stderr(olderr)
 end
-
-function cleanup()
-    ecode = ccall((:IDL_RPCCleanup, idlrpc), Cint, (Ptr{Void},Cint), pclient.ptr, 1)
-    if ecode != 1
-        error("IDL.exit: failed")
-    end
-    if pclient.process != nothing
-        kill(pclient.process)
-    end
-    return
-end
-
-#Register cleanup function to be called at exit
-atexit(cleanup)
 
 function execute_converted(str::AbstractString)
     # does no conversion of interpolated vars, continuation chars, or newlines

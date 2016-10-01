@@ -4,10 +4,14 @@ module IDLCall
 using Compat
 
 # Find IDL library directory if on Linux
-if is_linux()
+if is_unix()
     idl_dir = dirname(chomp(readstring(`which idl`)))
-    idl_lib = chomp(readstring(`bash -c "ls -d $(idl_dir)/bin.*"`))
-    push!(Libdl.DL_LOAD_PATH, idl_lib)
+    idl_lib_dir = chomp(readstring(`bash -c "ls -d $(idl_dir)/bin.*"`))
+    const idlcall = idl_lib_dir*"/libidl"
+    const idlrpc = idl_lib_dir*"/libidl_rpc"
+else
+    const idlcall = "libidl"
+    const idlrpc = "libidl_rpc"
 end
 
 export init, get_var, put_var, execute, @get_var, @put_var, idl_repl

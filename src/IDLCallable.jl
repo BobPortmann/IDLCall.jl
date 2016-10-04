@@ -4,32 +4,32 @@ include("common-funcs.jl")
 include("common-macros.jl")
 
 function init()
-    ecode = ccall((:IDL_Init, "libidl"), Cint, (Cint, Ptr{Cint}, Ptr{Ptr{UInt8}}),
+    ecode = ccall((:IDL_Init, idlcall), Cint, (Cint, Ptr{Cint}, Ptr{Ptr{UInt8}}),
                   0, C_NULL, C_NULL)
     if ecode == 0
         error("IDL.init: IDL init failed")
     end
     global output_cb
-    ccall((:IDL_ToutPush, "libidl"), Void, (Ptr{Void},), output_cb)
+    ccall((:IDL_ToutPush, idlcall), Void, (Ptr{Void},), output_cb)
 end
 
 # function execute{T<:AbstractString}(strarr::Array{T,1})
 #     println("Strarray")
 #     strarr =  ASCIIString[string(s) for s in strarr]
-#     ecode = ccall((:IDL_Execute, "libidl"), Cint, (Cint, Ptr{Ptr{UInt8}},), length(strarr), strarr)
+#     ecode = ccall((:IDL_Execute, idlcall), Cint, (Cint, Ptr{Ptr{UInt8}},), length(strarr), strarr)
 #     if ecode != 0
 #         # since error get printed by IDL, we just reset error state
-#         ecode = ccall((:IDL_ExecuteStr, "libidl"), Cint, (Ptr{UInt8},), "message, /RESET")
+#         ecode = ccall((:IDL_ExecuteStr, idlcall), Cint, (Ptr{UInt8},), "message, /RESET")
 #     end
 #     return nothing
 # end
 
 function execute_converted(str::AbstractString)
     # does no conversion of interpolated vars, continuation chars, or newlines
-    ecode = ccall((:IDL_ExecuteStr, "libidl"), Cint, (Ptr{UInt8},), str)
+    ecode = ccall((:IDL_ExecuteStr, idlcall), Cint, (Ptr{UInt8},), str)
     if ecode != 0
         # since error get printed by IDL, we just reset error state
-        ecode = ccall((:IDL_ExecuteStr, "libidl"), Cint, (Ptr{UInt8},), "message, /RESET")
+        ecode = ccall((:IDL_ExecuteStr, idlcall), Cint, (Ptr{UInt8},), "message, /RESET")
     end
     return true
 end
@@ -47,7 +47,7 @@ output_cb = cfunction(get_output, Void, (Cint, Ptr{UInt8},Cint))
 
 # function exit()
 #     # probably better to do a .full_reset instead
-#     ecode = ccall((:IDL_Cleanup, "libidl"), Cint, (Cint,), IDL_TRUE)
+#     ecode = ccall((:IDL_Cleanup, idlcall), Cint, (Cint,), IDL_TRUE)
 #     return nothing
 # end
 
@@ -70,7 +70,7 @@ function put_var{T,N}(arr::Array{T,N}, name::AbstractString)
     end
     dim = zeros(Int, IDL_MAX_ARRAY_DIM)
     dim[1:N] = [size(arr)...]
-    vptr = ccall((:IDL_ImportNamedArray, "libidl"), Ptr{IDL_Variable},
+    vptr = ccall((:IDL_ImportNamedArray, idlcall), Ptr{IDL_Variable},
                  (Ptr{UInt8}, Cint, IDL_ARRAY_DIM, Cint, Ptr{UInt8}, IDL_ARRAY_FREE_CB , Ptr{Void}),
                  name, N, dim, idl_type(arr), pointer(arr), free_cb, C_NULL)
     if vptr == C_NULL
@@ -89,7 +89,7 @@ function put_var(x, name::AbstractString)
     end
     dim = zeros(Int, IDL_MAX_ARRAY_DIM)
     dim[1] = 1
-    ccall((:IDL_ImportNamedArray, "libidl"), Ptr{Void},
+    ccall((:IDL_ImportNamedArray, idlcall), Ptr{Void},
           (Ptr{UInt8}, Cint, Ptr{IDL_MEMINT}, Cint, Ptr{UInt8}, Ptr{Void}, Ptr{Void}),
           name, 1, dim, idl_type(x), pointer([x]), C_NULL, C_NULL)
     execute("$name = $name[0]")
@@ -103,20 +103,20 @@ function put_var(str::AbstractString, name::AbstractString)
 end
 
 function get_name(vptr::Ptr{IDL_Variable})
-    str = ccall((:IDL_VarName, "libidl"), Ptr{Cchar}, (Ptr{IDL_Variable},), vptr)
+    str = ccall((:IDL_VarName, idlcall), Ptr{Cchar}, (Ptr{IDL_Variable},), vptr)
     return unsafe_string(str)
 end
 
 function get_vptr(name::AbstractString)
     # returns C_NULL if name not in scope
     name = uppercase(name)
-    vptr = ccall((:IDL_GetVarAddr, "libidl"), Ptr{IDL_Variable}, (Ptr{UInt8},), name)
+    vptr = ccall((:IDL_GetVarAddr, idlcall), Ptr{IDL_Variable}, (Ptr{UInt8},), name)
     vptr
 end
 
 function get_var(name::AbstractString)
     name = uppercase(name)
-    vptr = ccall((:IDL_GetVarAddr, "libidl"), Ptr{IDL_Variable}, (Ptr{UInt8},), name)
+    vptr = ccall((:IDL_GetVarAddr, idlcall), Ptr{IDL_Variable}, (Ptr{UInt8},), name)
     if vptr == C_NULL
         error("IDL.get_var: variable $name does not exist")
     end

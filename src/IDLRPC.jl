@@ -3,9 +3,6 @@ include("idl_types.jl")
 include("common-funcs.jl")
 include("common-macros.jl")
 
-# name of IDL lib
-const idlrpc = "libidl_rpc"
-
 # RPC client
 type RPCclient
     ptr::Ptr{Void}

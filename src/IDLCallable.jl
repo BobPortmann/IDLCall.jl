@@ -3,6 +3,12 @@ include("idl_types.jl")
 include("common-funcs.jl")
 include("common-macros.jl")
 
+if is_apple()
+    cd(idl_lib_dir) do
+        Libdl.dlopen("libidl")
+    end
+end
+
 function init()
     ecode = ccall((:IDL_Init, idlcall), Cint, (Cint, Ptr{Cint}, Ptr{Ptr{UInt8}}),
                   0, C_NULL, C_NULL)

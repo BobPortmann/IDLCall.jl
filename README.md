@@ -2,7 +2,8 @@
 
 [![Build Status](https://travis-ci.org/BobPortmann/IDLCall.jl.svg?branch=master)](https://travis-ci.org/BobPortmann/IDLCall.jl)
 
-IDLCall is an interface to call IDL from the Julia language.
+IDLCall is an interface to call IDL from the Julia language. Note that you must have a valid IDL
+license to use IDL from julia.
 
 ## Installation
 
@@ -11,30 +12,26 @@ Within Julia, use the package manager:
 Pkg.clone("https://github.com/BobPortmann/IDLCall.jl.git")
 ```
 
-You also need julia to be able to find the IDL library. Note that I have only used
-OSX and am only guessing on other platforms (please provide feedback if you learn
-how it works).
+IDLCall should find and load the IDL library automatically on Mac and Linux. It has not been 
+tested on Windows so please file an issue if you use Windows and want to help make it work.
 
-- OSX: set DYLD_FALLBACK_LIBRARY_PATH="/Applications/exelis/idl/bin/bin.darwin.x86_64"
-  in shell before starting julia.
-- Linux: Automatically found in julia
-- Windows: ???
+IDL can be called using either the `RPC` or `Callable` interface. On windows only the `Callable`
+interface is available. You can set an environmental variable `JL_IDL_TYPE` to `RPC` or `CALLABLE`
+to force the use of that interface. 
+Alternatively you can set `ENV["JL_IDL_TYPE]` within julia before starting IDLCall.
+Note that by default IDLCall uses the `RPC` interface
+on Mac and Linux and `Callable` on Windows. The biggest difference between these is that:
 
-IDL can be called using either the `RPC` or `Callable` interfaces. On windows only the `Callable`
-interface is available. To use the `RPC` interface you must run `idlrpc` in a shell before
-starting `IDLCall`. You can set the environmental variable `JL_IDL_TYPE` to `RPC` or `CALLABLE`
-to force the use of that interface. Note that by default IDLCall uses the `RPC` interface
-on OSX and Linux and `Callable` on Windows. The biggest difference between these is that:
-
-- `Callable` IDL runs in one program space and thus arrays can be shared between julia and idl.
+- `Callable` IDL runs in one program space and thus arrays can be shared between julia and IDL.
   In `RPC` all arrays are copied between processes. Note that I have run into issues with IDL
   loading DLM's while using `Callable` (e.g., NetCDF).
 
-- The IDL `RPC` program runs independently of the julia process (e.g., julia
-  can be restarted without killing the IDL RPC process). Note that you must start the
-  `RPC` process in a shell using `idlrpc` command before starting IDLCall.
-
 - IDL `RPC` is not supported on windows
+
+- `Callable` is always managed by IDLCall while `RPC` can be managed by IDLCall or the user.
+  By managed we mean that it is opened it when you load IDLCall and closed it when you close julia.
+  To manage `RPC` yourself run `idlrpc` in a shell before starting IDLCall. This allows the `idlrpc`
+  session to persist and julia can be restarted without killing the `idlrpc` process.
 
 ## Quickstart
 

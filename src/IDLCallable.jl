@@ -128,3 +128,28 @@ function get_var(name::AbstractString)
     end
     get_var(vptr)
 end
+
+function ntags(s::IDL_Structure)
+    ccall((:IDL_StructNumTags, idlcall), Cint, (Ptr{Void},))
+end
+
+function get_tag(s::IDL_Structure, name::AbstractString)
+    offset = ccall((:IDL_StructTagInfoByName, idlcall), IDL_MEMINT,
+                   (Ptr{Void}, Ptr{UInt8}, Cint, IDL_Variable),
+                   s.sdef, uppercase(name), msg_action, vptr)
+    return get_var(vptr, name)
+end
+
+function get_tag(s::IDL_Structure, index::Int)
+    offset = ccall((:IDL_StructTagInfoByIndex, idlcall), IDL_MEMINT,
+                   (Ptr{Void}, Cint, Cint, IDL_Variable),
+                   s.sdef, index, msg_action, vptr)
+    return get_var(vptr)
+end
+
+function get_tag_name(s::IDL_Structure, index::Int)
+    str = ccall((:IDL_StructTagNameByIndex, idlcall), Ptr{UInt8},
+                (Ptr{Void}, Cint, Cint, Ptr{Ptr{UInt8}}),
+                s.sdef, index, msg_action, C_NULL)
+    return unsafe_string(str)
+end

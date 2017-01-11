@@ -98,6 +98,31 @@ end
 # no free_cb needed in idlrpc (I think)
 free_cb = C_NULL
 
+function ntags(s::IDL_Structure)
+    ccall((:IDL_StructNumTags, idlrpc), Cint, (Ptr{Void},))
+end
+
+function get_tag(s::IDL_Structure, name::AbstractString)
+    offset = ccall((:IDL_StructTagInfoByName, idlrpc), IDL_MEMINT,
+                   (Ptr{Void}, Ptr{UInt8}, Cint, IDL_Variable),
+                   s.sdef, uppercase(name), msg_action, vptr)
+    return get_var(vptr, name)
+end
+
+function get_tag(s::IDL_Structure, index::Int)
+    offset = ccall((:IDL_StructTagInfoByIndex, idlrpc), IDL_MEMINT,
+                   (Ptr{Void}, Cint, Cint, IDL_Variable),
+                   s.sdef, index, msg_action, vptr)
+    return get_var(vptr)
+end
+
+function get_tag_name(s::IDL_Structure, index::Int)
+    str = ccall((:IDL_StructTagNameByIndex, idlrpc), Ptr{UInt8},
+                (Ptr{Void}, Cint, Cint, Ptr{Ptr{UInt8}}),
+                s.sdef, index, msg_action, C_NULL)
+    return unsafe_string(str)
+end
+
 # NOTE: Put_var makes a copy of the data in the array when it is put into idlrpc process.
 #       This is different than callable idl where the pointer to the data is copied.
 #       I think the difference is because callable idl runs in the same process but

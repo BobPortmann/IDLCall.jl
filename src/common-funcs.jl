@@ -82,7 +82,10 @@ function get_var(vptr::Ptr{IDL_Variable}, name::AbstractString="")
             end
             return strarr
         elseif var.vtype == IDL_TYP_STRUCT
-            error("IDL.extract_from_vptr: $name: STRUCT not setup")
+            parr = reinterpret(Ptr{IDL_Structure}, convert(Int, var.buf))
+            idl_struct = unsafe_load(parr)
+            ntags = ntags(idl_struct)
+            return Dict(get_tag_name(idl_struct,i) => get_tag(idl_struct,i) for i=1:ntags)
         elseif var.vtype == IDL_TYP_PTR
             error("IDL.extract_from_vptr: $name: PTRARR types not setup")
         elseif var.vtype == IDL_TYP_OBJREF
@@ -125,7 +128,10 @@ function get_var(vptr::Ptr{IDL_Variable}, name::AbstractString="")
         s = reinterpret(Ptr{Cchar}, convert(UInt64,var.buf >> 64))
         return slen > 0 ? unsafe_string(s, slen) : ""
     elseif var.vtype == IDL_TYP_STRUCT
-        error("IDL.extract_from_vptr: $name: STRUCT not setup")
+        parr = reinterpret(Ptr{IDL_Structure}, convert(Int, var.buf))
+        idl_struct = unsafe_load(parr)
+        ntags = ntags(idl_struct)
+        return Dict(get_tag_name(idl_struct,i)=>get_tag(idl_struct,i) for i=1:ntags)
     elseif var.vtype == IDL_TYP_DCOMPLEX
         return complex(reinterpret(Float64, convert(UInt64, var.buf & mask64)),
                        reinterpret(Float64, convert(UInt64, var.buf >> 64)))

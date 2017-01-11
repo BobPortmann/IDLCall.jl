@@ -160,6 +160,11 @@ immutable IDL_String
     IDL_String() = new(0, 0, Base.unsafe_convert(Ptr{Cchar}, Array(Cchar, IDL_RPC_MAX_STRLEN)))
 end
 
+immutable IDL_Structure
+    arr::IDL_Array
+    sdef::Ptr{Void}
+end
+
 # From idl_rpc.h
 const IDL_RPC_MAX_STRLEN = 512		# max string length
 immutable IDL_RPC_LINE_S

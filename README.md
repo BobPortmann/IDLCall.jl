@@ -18,7 +18,7 @@ tested on Windows so please file an issue if you use Windows and want to help ma
 IDL can be called using either the `RPC` or `Callable` interface. On windows only the `Callable`
 interface is available. You can set an environmental variable `JL_IDL_TYPE` to `RPC` or `CALLABLE`
 to force the use of that interface. 
-Alternatively you can set `ENV["JL_IDL_TYPE]` within julia before starting IDLCall.
+Alternatively you can set `ENV["JL_IDL_TYPE"]` within julia before starting IDLCall.
 Note that by default IDLCall uses the `RPC` interface
 on Mac and Linux and `Callable` on Windows. The biggest difference between these is that:
 

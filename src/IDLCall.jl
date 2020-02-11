@@ -4,7 +4,7 @@ module IDLCall
 using Compat
 
 # Find IDL library directory if on Linux
-if is_unix()
+if Sys.isunix()
     idl_dir = dirname(chomp(readstring(`which idl`)))
     idl_lib_dir = chomp(readstring(`bash -c "ls -d $(idl_dir)/bin.*"`))
     const idlcall = idl_lib_dir*"/libidl"
@@ -16,11 +16,11 @@ end
 
 export init, get_var, put_var, execute, @get_var, @put_var, idl_repl
 
-jl_idl_type = get(ENV, "JL_IDL_TYPE", is_windows() ? "CALLABLE" : "RPC")
+jl_idl_type = get(ENV, "JL_IDL_TYPE", Sys.iswindows() ? "CALLABLE" : "RPC")
 
 jl_idl_type == "RPC" ? include("IDLRPC.jl") :
 jl_idl_type == "CALLABLE" ? include("IDLCallable.jl") :
-is_windows() ? error("JL_IDL_TYPE must be CALLABLE on windows") :
+Sys.iswindows() ? error("JL_IDL_TYPE must be CALLABLE on windows") :
 error("JL_IDL_TYPE must be RPC or CALLABLE")
 
 include("IDLREPL.jl")

@@ -3,9 +3,9 @@
 help() = execute("help")
 help(s::AbstractString) = execute("help, "*s)
 idlhelp(s::AbstractString) = execute("?"*s)
-idlhelp{T<:AbstractString}(strarr::Array{T,1}) = println("IDL.idlhelp: Array input not supported")
+idlhelp(strarr::Array{T,1}) where {T<:AbstractString} = println("IDL.idlhelp: Array input not supported")
 shell_command(s::AbstractString) = println("% Shell commands not allowed in IDLRPC")
-shell_command{T<:AbstractString}(strarr::Array{T,1}) = println("% Shell commands not allowed in IDLRPC")
+shell_command(strarr::Array{T,1}) where {T<:AbstractString} = println("% Shell commands not allowed in IDLRPC")
 reset() = execute(".reset_session")
 full_reset() = execute(".full_reset_session")
 dotrun(filename::AbstractString) = execute(".run $filename")
@@ -17,7 +17,7 @@ function execute(str::AbstractString)
     return nothing
 end
 
-function execute_converted{T<:AbstractString}(strarr::Array{T,1})
+function execute_converted(strarr::Array{T,1}) where {T<:AbstractString}
     # does no conversion of interpolated vars, continuation chars, or newlines
     for str in strarr
         execute_converted(str) || return false
@@ -42,7 +42,7 @@ function put_var_from_name(name::AbstractString, abort::Bool=true)
     return (ok, msg)
 end
 
-function put_var{T<:AbstractString,N}(arr::Array{T,N}, name::AbstractString)
+function put_var(arr::Array{T,N}, name::AbstractString) where {T<:AbstractString,N}
     # Sort of a HACK: do direcly since ImportNamedArray doesn't work
     execute("$name = strarr"*replace(string(size(arr)), ",)", ")"))
     for i=1:length(arr)

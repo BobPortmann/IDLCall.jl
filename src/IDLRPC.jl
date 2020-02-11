@@ -29,7 +29,7 @@ function rpc_cleanup()
 end
 
 function init()
-   olderr = STDERR
+   olderr = stderr
    (rd, wr) = redirect_stderr() #Redirect error messages
    ptr = rpc_init()
    if ptr != C_NULL #Check if idlrpc is already running

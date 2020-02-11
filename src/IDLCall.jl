@@ -5,20 +5,22 @@ module IDLCall
 
 # Find IDL library directory if on Linux
 if Sys.isunix()
-   #IDL_DIR = dirname(chomp(readstring(`which idl`)))
-   #idl_lib_dir = chomp(readstring(`bash -c "ls -d $(IDL_DIR)/bin.*"`))
+   # readlink???
+   #IDL_LIB_DIR = chomp(readstring(`bash -c "ls -d $(IDL_DIR)/bin.*"`))
    #IDL_DIR = dirname(chomp(read(`which idl`,String)))
-   IDL_DIR = "/Applications/exelis/idl85/"
+   IDL_DIR = "/Applications/exelis/idl85"
    #IDL_PATH='/Users/hyzhou/Idl:${IDL_DIR}/lib:${IDL_DIR}/lib/utilities'
    #IDL_STARTUP=idlrc
-   idl_lib_dir = chomp(read(`bash -c "ls -d $(IDL_DIR)/bin.*"`,String))
-   #const idlcall = idl_lib_dir*"/libidl"
-   #const idlrpc = idl_lib_dir*"/libidl_rpc"
-   const idlcall = joinpath(idl_lib_dir,"lib")
-   const idlrpc = joinpath(idl_lib_dir,"libidl_rpc")
-else
-   const idlcall = "libidl"
-   const idlrpc = "libidl_rpc"
+   #IDL_LIB_DIR = chomp(read(`bash -c "ls -d $(IDL_DIR)/bin.*"`,String))
+   IDL_LIB_DIR = "/Applications/exelis/idl85/bin/bin.darwin.x86_64"
+   #const idlcall = IDL_LIB_DIR*"/libidl"
+   #const idlrpc = IDL_LIB_DIR*"/libidl_rpc"
+   #const idlcall = joinpath(IDL_LIB_DIR,"lib")
+   #const idlrpc = joinpath(IDL_LIB_DIR,"libidl_rpc")
+   const idlrpc = joinpath(IDL_LIB_DIR,"libidl_rpc.dylib")
+else # Windows
+   #const idlcall = "libidl"
+   #const idlrpc = "libidl_rpc"
 end
 
 export init, get_var, put_var, execute, @get_var, @put_var, idl_repl

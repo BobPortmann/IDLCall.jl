@@ -69,7 +69,7 @@ end
 function capture(flag::Bool)
    nlines = flag ? 5000 : 0
    ecode = ccall((:IDL_RPCOutputCapture, libidl_rpc), Cint, (Ptr{Nothing}, Cint), pclient.ptr, nlines)
-   (ecode != 1) && error("IDL.capture: IDL_RPCOutputCapture failed")
+   ecode != 1 && error("IDL.capture: IDL_RPCOutputCapture failed")
    return nothing
 end
 
@@ -178,13 +178,13 @@ end
 
 function get_vptr(name::AbstractString)
    # returns C_NULL if name not in scope
-   ccall((:IDL_RPCGetMainVariable, libidl_rpc), Ptr{IDL_Variable}, (Ptr{Nothing},Ptr{UInt8}),
-   pclient.ptr, name)
+   ccall((:IDL_RPCGetMainVariable, libidl_rpc), Ptr{IDL_Variable},
+      (Ptr{Nothing},Ptr{UInt8}), pclient.ptr, name)
 end
 
 function get_var(name::AbstractString)
-   vptr = ccall((:IDL_RPCGetMainVariable, libidl_rpc), Ptr{IDL_Variable}, (Ptr{Nothing},Ptr{UInt8}),
-   pclient.ptr, name)
+   vptr = ccall((:IDL_RPCGetMainVariable, libidl_rpc), Ptr{IDL_Variable},
+      (Ptr{Nothing},Ptr{UInt8}), pclient.ptr, name)
    # NOTE: IDL_RPCGetVariable never seems to return NULL in spite of docs
    if vptr == C_NULL
       error("IDL.get_var: variable $name does not exist")

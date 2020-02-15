@@ -12,9 +12,7 @@ dotrun(filename::AbstractString) = execute(".run $filename")
 function execute(str::AbstractString)
    ok, strarr, msg = convert_command(str)
    ok || error(msg)
-   println("start")
    execute_converted(strarr)
-   println("done")
    return nothing
 end
 
@@ -76,8 +74,8 @@ function get_var(vptr::Ptr{IDL_Variable}, name::AbstractString="")
          parr = reinterpret(Ptr{IDL_Array}, convert(Int, var.buf))
          idl_arr = unsafe_load(parr)
          pdata = reinterpret(Ptr{IDL_String}, idl_arr.data)
-         strarr = Array(Compat.ASCIIString, dims(idl_arr.dim, idl_arr.n_dim))
-         for i=1:idl_arr.n_elts
+         strarr = Array{AbstractString}(dims(idl_arr.dim, idl_arr.n_dim))
+         for i = 1:idl_arr.n_elts
             data = unsafe_load(pdata, i)
             strarr[i] = data.slen > 0 ? unsafe_string(data.s, Int(data.slen)) : ""
          end
@@ -93,13 +91,15 @@ function get_var(vptr::Ptr{IDL_Variable}, name::AbstractString="")
          idl_arr = unsafe_load(parr)
          jl_t = jl_type(var.vtype)
          pdata = reinterpret(Ptr{jl_t}, idl_arr.data)
-         # not sure why this doesn't work
-         # arr = unsafe_wrap(Array, pdata, dims(idl_arr.dim, idl_arr.n_dim))
-         arr = Array(jl_t, dims(idl_arr.dim, idl_arr.n_dim))
-         for i=1:idl_arr.n_elts
+         arr = unsafe_wrap(Array, pdata, dims(idl_arr.dim, idl_arr.n_dim))
+         #=
+         arr = Array{jl_t}(undef, dims(idl_arr.dim, idl_arr.n_dim))
+         for i = 1:idl_arr.n_elts
             arr[i] = unsafe_load(pdata, i)
          end
-         return arr
+         =#
+         # If you don't copy, the pointer will be freed!
+         return copy(arr)
       end
    end
 
@@ -150,7 +150,7 @@ end
 function inside_string(pt::Int, line::AbstractString)
    for re in (r"('[^']+')", r"(\"[^\"]+\")")
       for m in eachmatch(re, line)
-         if m.offset+endof(m.captures[1]) > pt ≥ m.offset
+         if m.offset+length(m.captures[1]) > pt ≥ m.offset
             return true
          end
       end
@@ -160,27 +160,19 @@ end
 
 function convert_continuations(line)
    # remove trailing comments and continuation lines
-   # will remove continuation on final line which is invalid idl syntax
-   #pt = start(line)
-   pt = strip(line)
-   while (pt = findfirst(r";|\$", pt)) > 0
-      if !inside_string(pt, line)
-         line = replace(line, r"(;|\$).*(\n|$)", "", 1)
-      end
-      if pt < endof(line)
-         pt = next(line, pt)[2]
-      end
-   end
+   # currently has issue with [;|\$] inside quotes!
+   line = replace(strip(line), r"(;|\$).*(\n|$)"=>"")
+
    return true, line, ""
 end
 
 function convert_newlines(line)
-   # separates line at newline ("\n") characters into string array
+   # separates line at newline ('\n') characters into string array
    # assumes that continuation characters are already removed
    # not type stable but should not matter for repl use
    line = chomp(line)
-   if in('\n', line)
-      line = split(line, '\n', keep=false)
+   if '\n' in line
+      line = split(line, '\n', keepempty=false)
    end
    return line
 end
@@ -202,7 +194,7 @@ end
 function convert_command(line)
    ok, line, msg = replace_interpolated_vars(line)
    ok || return ok, line, msg
-   #ok, line, msg = convert_continuations(line) # hyzhou: remove while testing
+   ok, line, msg = convert_continuations(line) # hyzhou: remove while testing
    ok || return ok, line, msg
    line = convert_newlines(line)
    return true, line, msg

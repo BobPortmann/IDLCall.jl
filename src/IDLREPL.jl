@@ -1,15 +1,16 @@
-import Base: LineEdit, REPL
+import REPL:respond, LineEdit, mode_keymap
+import Base:active_repl, text_colors
 
 function idl_repl()
 
    # Setup idl prompt
    prompt = LineEdit.Prompt("IDL> ";
-   prompt_prefix=Base.text_colors[:blue],
-   prompt_suffix=Base.text_colors[:white])
+   prompt_prefix=text_colors[:blue],
+   prompt_suffix=text_colors[:white])
 
-   repl = Base.active_repl
+   repl = active_repl
 
-   prompt.on_done = REPL.respond(repl,prompt) do line
+   prompt.on_done = respond(repl,prompt) do line
       ok2, line, msg = convert_continuations(line)
       if !ok2
          println(msg)
@@ -54,20 +55,21 @@ function idl_repl()
       end)
 
    search_prompt, skeymap = LineEdit.setup_search_keymap(hp)
-   mk = REPL.mode_keymap(main_mode)
+   mk = mode_keymap(main_mode)
 
-   b = Dict{Any,Any}[skeymap, mk, LineEdit.history_keymap, LineEdit.default_keymap,
-      LineEdit.escape_defaults]
+   b = Dict{Any,Any}[skeymap, mk, LineEdit.history_keymap,
+      LineEdit.default_keymap, LineEdit.escape_defaults]
    prompt.keymap_dict = LineEdit.keymap(b)
 
-   main_mode.keymap_dict = LineEdit.keymap_merge(main_mode.keymap_dict, idl_keymap)
+   main_mode.keymap_dict = LineEdit.keymap_merge(main_mode.keymap_dict,
+      idl_keymap)
    nothing
 end
 
 function find_prompt_in_modes(modes, name)
    j = -1
    for (i,mode) in enumerate(modes)
-      if :prompt in fieldnames(mode) && mode.prompt == name
+      if :prompt in fieldnames(typeof(mode)) && mode.prompt == name
          j = i
          break
       end

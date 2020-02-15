@@ -98,14 +98,14 @@ free_cb = C_NULL
 #       I think the difference is because callable idl runs in the same process but
 #       idlrpc does not. Thus, no free_cb is needed in idlrpc version.
 function put_var(arr::Array{T,N}, name::AbstractString) where {T,N}
-   if !isbits(eltype(arr)) || (idl_type(arr) < 0)
+   if !isbitstype(eltype(arr)) || (idl_type(arr) < 0)
       error("IDL.put_var: only works with some vars containing bits types")
    end
    dim = zeros(Int, IDL_MAX_ARRAY_DIM)
    dim[1:N] = [size(arr)...]
    vptr = ccall((:IDL_RPCImportArray, libidl_rpc), Ptr{IDL_Variable},
       (Cint, IDL_ARRAY_DIM, Cint, Ptr{T}, IDL_ARRAY_FREE_CB),
-   N, dim, idl_type(arr), arr, free_cb)
+      N, dim, idl_type(arr), arr, free_cb)
    ecode = ccall((:IDL_RPCSetVariable, libidl_rpc), Cint,
       (Ptr{Nothing}, Ptr{UInt8}, Ptr{IDL_Variable}), pclient.ptr, name, vptr)
    ecode != 1 && error("IDL.put_var: failed")

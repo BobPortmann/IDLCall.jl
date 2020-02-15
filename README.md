@@ -33,31 +33,24 @@ Note that by default `IDL.jl` uses the `RPC` interface on Mac and Linux and `Cal
 
 ## Quickstart
 
-I recommend you start your code with
-
 ```julia
 using IDL
 ```
-Then you can add a Julia variable to the IDL process with
-
+You can add a Julia variable to the IDL process with
 ```
 x = 1
 put_var(x, "x")
 ```
-
 and you can retrieve variable into Julia using
-
 ```
 x = get_var("x")
 ```
-
 You can run an arbitrary chunk of code in IDL using
-
 ```
 idl.execute("any valid idl code")
 ```
 Note that only primitive data types are supported at this time (e.g., structure variables
-are not supported yet).
+are not supported yet). Also, `[;|\$]` inside quotes won't be correctly recognized.
 
 ## REPL
 
@@ -68,8 +61,6 @@ variable `var` into the IDL process. This works at the IDL prompt or in strings 
 `execute` function.
 
 ## ToDo
-
-- Add tests
 
 - Make more flexible to install on all platforms
 

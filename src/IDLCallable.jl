@@ -5,12 +5,12 @@ include("common-macros.jl")
 using Libdl
 
 if Sys.isapple()
-    cd(IDL_LIB_DIR) do
+    cd(idl_lib_dir) do
         Libdl.dlopen("libidl")
     end
 end
 
-function init()
+function callable_init()
     ecode = ccall((:IDL_Init, idlcall), Cint, (Cint, Ptr{Cint}, Ptr{Ptr{UInt8}}),
     0, C_NULL, C_NULL)
     ecode == 0 && error("IDL.init: IDL init failed")

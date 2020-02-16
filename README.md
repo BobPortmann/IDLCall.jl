@@ -48,6 +48,16 @@ idl.execute("any valid idl code")
 ```
 Note that only primitive data types are supported at this time (e.g., structure variables are not supported yet). Also, `[;|\$]` inside quotes won't be correctly recognized.
 
+Many convenient functions are provided:
+```
+IDL.help
+IDL.idlhelp
+IDL.shell_command
+IDL.reset
+IDL.full_reset
+IDL.dotrun
+```
+
 ## REPL
 
 You can drop into an IDL REPL by typing `>` at the Julia prompt. Then you can type any valid IDL commands, including using continuation characters `$` for multi-line commands. One experimental feature I have added is the use of `%var` will auto-magically import the Julia variable `var` into the IDL process. This works at the IDL prompt or in strings passed into the `execute` function.

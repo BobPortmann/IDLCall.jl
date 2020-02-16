@@ -25,33 +25,6 @@ function rpc_cleanup()
    return
 end
 
-function __init__()
-   olderr = stderr
-   (rd, wr) = redirect_stderr() # Redirect error messages
-   ptr = rpc_init()
-   if ptr != C_NULL # Check if idlrpc is already running
-      global pclient = RPCclient(ptr)
-   else # Start up idlrpc
-      println("Initializing IDL")
-      run(`$idlrpc`, wait=false)
-      ptr = C_NULL
-      cnt = 0
-      while ptr == C_NULL && cnt < 60 # Allow for startup time
-         ptr = rpc_init()
-         cnt = cnt + 1
-         sleep(1)
-         print(".")
-      end
-      println("")
-      ptr == C_NULL && error("IDL.init: IDLRPC init failed")
-      global pclient = RPCclient(ptr, proc)
-   end
-   capture(true) # Capture output from IDL
-   redirect_stderr(olderr)
-   # Register cleanup function to be called at exit
-   atexit(rpc_cleanup)
-end
-
 function execute_converted(str::AbstractString)
    # does no conversion of interpolated vars, continuation chars, or newlines
    ecode = ccall((:IDL_RPCExecuteStr, libidl_rpc), Cint, (Ptr{Nothing},Ptr{UInt8}), pclient.ptr, str)

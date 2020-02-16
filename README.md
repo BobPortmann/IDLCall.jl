@@ -11,12 +11,9 @@ Within Julia, use the package manager:
 Pkg.clone("https://github.com/BobPortmann/IDL.jl.git")
 ```
 
-`IDL.jl` should find and load the IDL library automatically on Mac and Linux. It has not been
-tested on Windows so please file an issue if you use Windows and want to help make it work.
+`IDL.jl` should find and load the IDL library automatically on Mac and Linux. It has not been tested on Windows so please file an issue if you use Windows and want to help make it work.
 
-IDL can be called using either the `RPC` or `Callable` interface. On windows only the `Callable`
-interface is available. You can set an environmental variable `JL_IDL_TYPE` to `RPC` or `CALLABLE`
-to force the use of that interface.
+IDL can be called using either the `RPC` or `Callable` interface. On windows only the `Callable` interface is available. You can set an environmental variable `JL_IDL_TYPE` to `RPC` or `CALLABLE` to force the use of that interface.
 Alternatively you can set `ENV["JL_IDL_TYPE"]` within julia before starting `IDL.jl`.
 Note that by default `IDL.jl` uses the `RPC` interface on Mac and Linux and `Callable` on Windows. The biggest difference between these is that:
 
@@ -49,16 +46,11 @@ You can run an arbitrary chunk of code in IDL using
 ```
 idl.execute("any valid idl code")
 ```
-Note that only primitive data types are supported at this time (e.g., structure variables
-are not supported yet). Also, `[;|\$]` inside quotes won't be correctly recognized.
+Note that only primitive data types are supported at this time (e.g., structure variables are not supported yet). Also, `[;|\$]` inside quotes won't be correctly recognized.
 
 ## REPL
 
-You can drop into an IDL REPL by typing `>` at the Julia prompt. Then you can type any valid
-IDL commands, including using continuation characters `$` for multi-line commands. One
-experimental feature I have added is the use of `%var` will auto-magically import the julia
-variable `var` into the IDL process. This works at the IDL prompt or in strings passed into the
-`execute` function.
+You can drop into an IDL REPL by typing `>` at the Julia prompt. Then you can type any valid IDL commands, including using continuation characters `$` for multi-line commands. One experimental feature I have added is the use of `%var` will auto-magically import the Julia variable `var` into the IDL process. This works at the IDL prompt or in strings passed into the `execute` function.
 
 ## ToDo
 

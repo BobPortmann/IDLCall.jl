@@ -2,7 +2,6 @@ using IDL, Test
 
 # scalar passing
 execute("a = 1")
-help()
 execute("a += 1")
 a = get_var("a")
 @test a == 2
@@ -10,16 +9,19 @@ a = get_var("a")
 # string passing
 line = """
 b = '1+1 '
+c = 'hello'
 """
 execute(line)
 b = get_var("b")
+@get_var c
 @test b == "1+1 "
+@test c == "hello"
 
 # array passing
 a = [1,2,3]
 put_var(a, "a")
 execute("a += 1")
-a = get_var("a")
+@get_var a
 @test a == [2,3,4]
 
 

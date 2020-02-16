@@ -28,14 +28,13 @@ function make_getvar_statement(ex::Expr)
     if !(ex.head == :(=))
         if ex.head == :kw
             error("Must call @get_var without parenthesis if using statements")
-            else
-                erorr("Invalid expression for @get_var: " * string(ex))
-            end
+        else
+            error("Invalid expression for @get_var: " * string(ex))
         end
-        v::Symbol = ex.args[1]
-        k::Symbol = ex.args[2]
-        :($(v) = get_var(string($(Meta.quot(k)))))
     end
+    v::Symbol = ex.args[1]
+    k::Symbol = ex.args[2]
+    :($(v) = get_var(string($(Meta.quot(k)))))
 end
 
 function get_var_multi(vs::Union{Symbol, Expr}...)

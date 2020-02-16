@@ -13,7 +13,31 @@ RPCclient(ptr::Ptr{Nothing}) = RPCclient(ptr, nothing)
 pclient = RPCclient()
 
 function rpc_init()
-    ccall((:IDL_RPCInit, libidl_rpc), Ptr{Nothing}, (Clong, Ptr{UInt8}), 0, C_NULL)
+    # Initializing RPC
+    olderr = stderr
+    (rd, wr) = redirect_stderr() # Redirect error messages
+    ptr = ccall((:IDL_RPCInit, libidl_rpc), Ptr{Nothing}, (Clong, Ptr{UInt8}), 0, C_NULL)
+    if ptr != C_NULL # Check if idlrpc is already running
+        global pclient = RPCclient(ptr)
+    else # Start up idlrpc
+        println("Initializing IDL")
+        run(`$idlrpc`, wait=false)
+        ptr = C_NULL
+        cnt = 0
+        while ptr == C_NULL && cnt < 60 # Allow for startup time
+            ptr = ccall((:IDL_RPCInit, libidl_rpc), Ptr{Nothing}, (Clong, Ptr{UInt8}), 0, C_NULL)
+            cnt = cnt + 1
+            sleep(1)
+            print(".")
+        end
+        println("")
+        ptr == C_NULL && error("IDL.init: IDLRPC init failed")
+        global pclient = RPCclient(ptr, proc)
+    end
+    capture(true) # Capture output from IDL
+    redirect_stderr(olderr)
+    # Register cleanup function to be called at exit
+    atexit(rpc_cleanup)
 end
 
 function rpc_cleanup()

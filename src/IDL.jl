@@ -32,6 +32,7 @@ include("IDLREPL.jl")
 function __init__()
     if jl_idl_type == "RPC"
         rpc_init()
+        full_reset() # Reset IDL
     elseif jl_idl_type == "CALLABLE"
         callable_init() # not yet working for MaxOS and Linux
     end

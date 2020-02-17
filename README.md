@@ -21,7 +21,7 @@ Note that by default `IDL.jl` uses the `RPC` interface on Mac and Linux and `Cal
   In `RPC` all arrays are copied between processes. Note that I have run into issues with IDL
   loading DLM's while using `Callable` (e.g., NetCDF).
 
-- IDL `RPC` is not supported on windows
+- IDL `RPC` is not supported on windows.
 
 - `Callable` is always managed by `IDL.jl` while `RPC` can be managed by `IDL.jl` or the user.
   By managed we mean that it is opened it when you load `IDL.jl` and closed it when you close julia.
@@ -34,16 +34,16 @@ Note that by default `IDL.jl` uses the `RPC` interface on Mac and Linux and `Cal
 using IDL
 ```
 You can add a Julia variable to the IDL process with
-```
+```julia
 x = 1
 put_var(x, "x")
 ```
 and you can retrieve variable into Julia using
-```
+```julia
 x = get_var("x")
 ```
 You can run an arbitrary chunk of code in IDL using
-```
+```julia
 idl.execute("any valid idl code")
 ```
 Note that only primitive data types are supported at this time (e.g., structure variables are not supported yet). Also, `[;|\$]` inside quotes won't be correctly recognized.
@@ -58,9 +58,15 @@ IDL.full_reset
 IDL.dotrun
 ```
 
+See more examples in the [test script](test/runtests.jl)
+
 ## REPL
 
 You can drop into an IDL REPL by typing `>` at the Julia prompt. Then you can type any valid IDL commands, including using continuation characters `$` for multi-line commands. One experimental feature I have added is the use of `%var` will auto-magically import the Julia variable `var` into the IDL process. This works at the IDL prompt or in strings passed into the `execute` function.
+
+## Note
+
+The IDL `RPC` library won't be automatically reset if you exit Julia. Therefore, currently you need to type `IDL.reset()` to cleanup the library.
 
 ## ToDo
 

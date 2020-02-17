@@ -27,6 +27,9 @@ Note that by default `IDL.jl` uses the `RPC` interface on Mac and Linux and `Cal
   By managed we mean that it is opened it when you load `IDL.jl` and closed it when you close julia.
   To manage `RPC` yourself run `idlrpc` in a shell before starting `IDL.jl`. This allows the `idlrpc`
   session to persist and julia can be restarted without killing the `idlrpc` process.
+  Currently `RPC` is always reset after the initialization of `IDL.jl`.
+
+There is an [issue](https://github.com/JuliaLang/julia/issues/7004) of opening `libidl` on Mac.
 
 ## Quickstart
 

@@ -11,8 +11,8 @@ if Sys.isapple()
 end
 
 function callable_init()
-    ecode = ccall((:IDL_Init, idlcall), Cint, (Cint, Ptr{Cint}, Ptr{Ptr{UInt8}}),
-    0, C_NULL, C_NULL)
+    ecode = ccall((:IDL_Initialize, idlcall), Cint,
+        (Cint, Ptr{Cint}, Ptr{Ptr{UInt8}}), 0, C_NULL, C_NULL)
     ecode == 0 && error("IDL.init: IDL init failed")
     global output_cb
     ccall((:IDL_ToutPush, idlcall), Nothing, (Ptr{Nothing},), output_cb)

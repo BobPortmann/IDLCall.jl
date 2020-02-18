@@ -1,22 +1,21 @@
-
 include("idl_types.jl")
 include("common-funcs.jl")
 include("common-macros.jl")
 
-if is_apple()
+using Libdl
+
+if Sys.isapple()
     cd(idl_lib_dir) do
         Libdl.dlopen("libidl")
     end
 end
 
-function init()
-    ecode = ccall((:IDL_Init, idlcall), Cint, (Cint, Ptr{Cint}, Ptr{Ptr{UInt8}}),
-                  0, C_NULL, C_NULL)
-    if ecode == 0
-        error("IDL.init: IDL init failed")
-    end
+function callable_init()
+    ecode = ccall((:IDL_Initialize, idlcall), Cint,
+        (Cint, Ptr{Cint}, Ptr{Ptr{UInt8}}), 0, C_NULL, C_NULL)
+    ecode == 0 && error("IDL.init: IDL init failed")
     global output_cb
-    ccall((:IDL_ToutPush, idlcall), Void, (Ptr{Void},), output_cb)
+    ccall((:IDL_ToutPush, idlcall), Nothing, (Ptr{Nothing},), output_cb)
 end
 
 # function execute{T<:AbstractString}(strarr::Array{T,1})
@@ -49,7 +48,7 @@ function get_output(flags::Cint, buf::Ptr{UInt8}, n::Cint)
     return
 end
 
-output_cb = cfunction(get_output, Void, (Cint, Ptr{UInt8},Cint))
+output_cb = @cfunction(get_output, Nothing, (Cint, Ptr{UInt8},Cint))
 
 # function exit()
 #     # probably better to do a .full_reset instead
@@ -68,17 +67,17 @@ function done_with_var(p::Ptr{UInt8})
     return
 end
 
-free_cb = cfunction(done_with_var, Void, (Ptr{UInt8},))
+free_cb = @cfunction(done_with_var, Nothing, (Ptr{UInt8},))
 
-function put_var{T,N}(arr::Array{T,N}, name::AbstractString)
+function put_var(arr::Array{T,N}, name::AbstractString) where {T,N}
     if !isbits(eltype(arr)) || (idl_type(arr) < 0)
         error("IDL.put_var: only works with some vars containing bits types")
     end
     dim = zeros(Int, IDL_MAX_ARRAY_DIM)
     dim[1:N] = [size(arr)...]
     vptr = ccall((:IDL_ImportNamedArray, idlcall), Ptr{IDL_Variable},
-                 (Ptr{UInt8}, Cint, IDL_ARRAY_DIM, Cint, Ptr{UInt8}, IDL_ARRAY_FREE_CB , Ptr{Void}),
-                 name, N, dim, idl_type(arr), pointer(arr), free_cb, C_NULL)
+    (Ptr{UInt8}, Cint, IDL_ARRAY_DIM, Cint, Ptr{UInt8}, IDL_ARRAY_FREE_CB , Ptr{Nothing}),
+    name, N, dim, idl_type(arr), pointer(arr), free_cb, C_NULL)
     if vptr == C_NULL
         error("IDL.put_var: failed")
     end
@@ -89,15 +88,15 @@ end
 function put_var(x, name::AbstractString)
     # Sort of a HACK: import as one-element array and then truncate to scalar
     # IDL_ImportArray(int n_dim, IDL_MEMINT dim[], int type,
-    #                 UCHAR *data, IDL_ARRAY_FREE_CB free_cb, void *s)
+    #                 UCHAR *data, IDL_ARRAY_FREE_CB free_cb, Nothing *s)
     if !isbits(x) || (idl_type(x) < 0)
         error("IDL.put_var: only works with some vars containing bits types")
     end
     dim = zeros(Int, IDL_MAX_ARRAY_DIM)
     dim[1] = 1
-    ccall((:IDL_ImportNamedArray, idlcall), Ptr{Void},
-          (Ptr{UInt8}, Cint, Ptr{IDL_MEMINT}, Cint, Ptr{UInt8}, Ptr{Void}, Ptr{Void}),
-          name, 1, dim, idl_type(x), pointer([x]), C_NULL, C_NULL)
+    ccall((:IDL_ImportNamedArray, idlcall), Ptr{Nothing},
+    (Ptr{UInt8}, Cint, Ptr{IDL_MEMINT}, Cint, Ptr{UInt8}, Ptr{Nothing}, Ptr{Nothing}),
+    name, 1, dim, idl_type(x), pointer([x]), C_NULL, C_NULL)
     execute("$name = $name[0]")
     return
 end

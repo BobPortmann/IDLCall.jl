@@ -1,11 +1,10 @@
-
 # convienence routines
 help() = execute("help")
 help(s::AbstractString) = execute("help, "*s)
 idlhelp(s::AbstractString) = execute("?"*s)
-idlhelp{T<:AbstractString}(strarr::Array{T,1}) = println("IDL.idlhelp: Array input not supported")
+idlhelp(strarr::Array{T,1}) where {T<:AbstractString} = println("IDL.idlhelp: Array input not supported")
 shell_command(s::AbstractString) = println("% Shell commands not allowed in IDLRPC")
-shell_command{T<:AbstractString}(strarr::Array{T,1}) = println("% Shell commands not allowed in IDLRPC")
+shell_command(strarr::Array{T,1}) where {T<:AbstractString} = println("% Shell commands not allowed in IDLRPC")
 reset() = execute(".reset_session")
 full_reset() = execute(".full_reset_session")
 dotrun(filename::AbstractString) = execute(".run $filename")
@@ -17,7 +16,7 @@ function execute(str::AbstractString)
     return nothing
 end
 
-function execute_converted{T<:AbstractString}(strarr::Array{T,1})
+function execute_converted(strarr::Array{T,1}) where {T<:AbstractString}
     # does no conversion of interpolated vars, continuation chars, or newlines
     for str in strarr
         execute_converted(str) || return false
@@ -42,7 +41,7 @@ function put_var_from_name(name::AbstractString, abort::Bool=true)
     return (ok, msg)
 end
 
-function put_var{T<:AbstractString,N}(arr::Array{T,N}, name::AbstractString)
+function put_var(arr::Array{T,N}, name::AbstractString) where {T<:AbstractString,N}
     # Sort of a HACK: do direcly since ImportNamedArray doesn't work
     execute("$name = strarr"*replace(string(size(arr)), ",)", ")"))
     for i=1:length(arr)
@@ -75,8 +74,8 @@ function get_var(vptr::Ptr{IDL_Variable}, name::AbstractString="")
             parr = reinterpret(Ptr{IDL_Array}, convert(Int, var.buf))
             idl_arr = unsafe_load(parr)
             pdata = reinterpret(Ptr{IDL_String}, idl_arr.data)
-            strarr = Array(Compat.ASCIIString, dims(idl_arr.dim, idl_arr.n_dim))
-            for i=1:idl_arr.n_elts
+            strarr = Array{AbstractString}(dims(idl_arr.dim, idl_arr.n_dim))
+            for i = 1:idl_arr.n_elts
                 data = unsafe_load(pdata, i)
                 strarr[i] = data.slen > 0 ? unsafe_string(data.s, Int(data.slen)) : ""
             end
@@ -92,65 +91,66 @@ function get_var(vptr::Ptr{IDL_Variable}, name::AbstractString="")
             idl_arr = unsafe_load(parr)
             jl_t = jl_type(var.vtype)
             pdata = reinterpret(Ptr{jl_t}, idl_arr.data)
-            # not sure why this doesn't work
-            # arr = unsafe_wrap(Array, pdata, dims(idl_arr.dim, idl_arr.n_dim))
-            arr = Array(jl_t, dims(idl_arr.dim, idl_arr.n_dim))
-            for i=1:idl_arr.n_elts
-                arr[i] = unsafe_load(pdata, i)
-            end
-            return arr
+            arr = unsafe_wrap(Array, pdata, dims(idl_arr.dim, idl_arr.n_dim))
+            #=
+            arr = Array{jl_t}(undef, dims(idl_arr.dim, idl_arr.n_dim))
+            for i = 1:idl_arr.n_elts
+            arr[i] = unsafe_load(pdata, i)
         end
+        =#
+        # If you don't copy, the pointer will be freed!
+        return copy(arr)
     end
+end
 
-    # Scalar value
-    if var.vtype == IDL_TYP_UNDEF
-        error("IDL.extract_from_vptr: $name: undefined variable")
-    elseif var.vtype == IDL_TYP_BYTE
-        return reinterpret(Int8, convert(UInt8, var.buf))
-    elseif var.vtype == IDL_TYP_INT
-        return reinterpret(Int16, convert(UInt16, var.buf))
-    elseif var.vtype == IDL_TYP_LONG
-        return reinterpret(Int32, convert(UInt32, var.buf))
-    elseif var.vtype == IDL_TYP_FLOAT
-        return reinterpret(Float32, convert(UInt32, var.buf))
-    elseif var.vtype == IDL_TYP_DOUBLE
-        return reinterpret(Float64, convert(UInt64, var.buf))
-    elseif var.vtype == IDL_TYP_COMPLEX
-        return complex(reinterpret(Float32, convert(UInt32, var.buf & mask32)),
-                       reinterpret(Float32, convert(UInt32, var.buf >> 32)))
-    elseif var.vtype == IDL_TYP_STRING
-        slen = reinterpret(Int32, convert(UInt32,var.buf & mask32))
-        stype = reinterpret(Int32, convert(UInt32,(var.buf & mask64) >> 32))
-        println(stype)
-        s = reinterpret(Ptr{Cchar}, convert(UInt64,var.buf >> 64))
-        return slen > 0 ? unsafe_string(s, slen) : ""
-    elseif var.vtype == IDL_TYP_STRUCT
-        error("IDL.extract_from_vptr: $name: STRUCT not setup")
-    elseif var.vtype == IDL_TYP_DCOMPLEX
-        return complex(reinterpret(Float64, convert(UInt64, var.buf & mask64)),
-                       reinterpret(Float64, convert(UInt64, var.buf >> 64)))
-    elseif var.vtype == IDL_TYP_PTR
-        error("IDL.extract_from_vptr: $name: PTR not setup")
-    elseif var.vtype == IDL_TYP_OBJREF
-        error("IDL.extract_from_vptr: $name: OBJREF not setup")
-    elseif var.vtype == IDL_TYP_UINT
-        return reinterpret(UInt16, convert(UInt16, var.buf))
-    elseif var.vtype == IDL_TYP_ULONG
-        return reinterpret(UInt32, convert(UInt32, var.buf))
-    elseif var.vtype == IDL_TYP_LONG64
-        return reinterpret(Int64, convert(UInt64, var.buf))
-    elseif var.vtype == IDL_TYP_ULONG64
-        return reinterpret(UInt64, convert(UInt64, var.buf))
-    end
-    # should be impossible to get here
-    error("IDL.extract_from_vptr: $name: type is not setup")
+# Scalar value
+if var.vtype == IDL_TYP_UNDEF
+    error("IDL.extract_from_vptr: $name: undefined variable")
+elseif var.vtype == IDL_TYP_BYTE
+    return reinterpret(Int8, convert(UInt8, var.buf))
+elseif var.vtype == IDL_TYP_INT
+    return reinterpret(Int16, convert(UInt16, var.buf))
+elseif var.vtype == IDL_TYP_LONG
+    return reinterpret(Int32, convert(UInt32, var.buf))
+elseif var.vtype == IDL_TYP_FLOAT
+    return reinterpret(Float32, convert(UInt32, var.buf))
+elseif var.vtype == IDL_TYP_DOUBLE
+    return reinterpret(Float64, convert(UInt64, var.buf))
+elseif var.vtype == IDL_TYP_COMPLEX
+    return complex(reinterpret(Float32, convert(UInt32, var.buf & mask32)),
+    reinterpret(Float32, convert(UInt32, var.buf >> 32)))
+elseif var.vtype == IDL_TYP_STRING
+    slen = reinterpret(Int32, convert(UInt32,var.buf & mask32))
+    stype = reinterpret(Int32, convert(UInt32,(var.buf & mask64) >> 32))
+    println(stype)
+    s = reinterpret(Ptr{Cchar}, convert(UInt64,var.buf >> 64))
+    return slen > 0 ? unsafe_string(s, slen) : ""
+elseif var.vtype == IDL_TYP_STRUCT
+    error("IDL.extract_from_vptr: $name: STRUCT not setup")
+elseif var.vtype == IDL_TYP_DCOMPLEX
+    return complex(reinterpret(Float64, convert(UInt64, var.buf & mask64)),
+    reinterpret(Float64, convert(UInt64, var.buf >> 64)))
+elseif var.vtype == IDL_TYP_PTR
+    error("IDL.extract_from_vptr: $name: PTR not setup")
+elseif var.vtype == IDL_TYP_OBJREF
+    error("IDL.extract_from_vptr: $name: OBJREF not setup")
+elseif var.vtype == IDL_TYP_UINT
+    return reinterpret(UInt16, convert(UInt16, var.buf))
+elseif var.vtype == IDL_TYP_ULONG
+    return reinterpret(UInt32, convert(UInt32, var.buf))
+elseif var.vtype == IDL_TYP_LONG64
+    return reinterpret(Int64, convert(UInt64, var.buf))
+elseif var.vtype == IDL_TYP_ULONG64
+    return reinterpret(UInt64, convert(UInt64, var.buf))
+end
+# should be impossible to get here
+error("IDL.extract_from_vptr: $name: type is not setup")
 end
 
 function inside_string(pt::Int, line::AbstractString)
-    for re in [r"('[^']+')", r"(\"[^\"]+\")"]
+    for re in (r"('[^']+')", r"(\"[^\"]+\")")
         for m in eachmatch(re, line)
-            if pt >= m.offset &&
-                pt < m.offset+endof(m.captures[1])
+            if m.offset+length(m.captures[1]) > pt ≥ m.offset
                 return true
             end
         end
@@ -160,26 +160,19 @@ end
 
 function convert_continuations(line)
     # remove trailing comments and continuation lines
-    # will remove continuation on final line which is invalid idl syntax
-    pt = start(line)
-    while (pt = first(search(line, r";|\$", pt))) > 0
-        if !inside_string(pt, line)
-            line = replace(line, r"(;|\$).*(\n|$)", "", 1)
-        end
-        if pt < endof(line)
-            pt = next(line, pt)[2]
-        end
-    end
+    # currently has issue with [;|\$] inside quotes!
+    line = replace(strip(line), r"(;|\$).*(\n|$)"=>"")
+
     return true, line, ""
 end
 
 function convert_newlines(line)
-    # separates line at newline ("\n") characters into string array
+    # separates line at newline ('\n') characters into string array
     # assumes that continuation characters are already removed
     # not type stable but should not matter for repl use
     line = chomp(line)
-    if in('\n', line)
-        line = split(line, '\n', keep=false)
+    if '\n' in line
+        line = split(line, '\n', keepempty=false)
     end
     return line
 end
@@ -201,7 +194,7 @@ end
 function convert_command(line)
     ok, line, msg = replace_interpolated_vars(line)
     ok || return ok, line, msg
-    ok, line, msg = convert_continuations(line)
+    ok, line, msg = convert_continuations(line) # hyzhou: remove while testing
     ok || return ok, line, msg
     line = convert_newlines(line)
     return true, line, msg

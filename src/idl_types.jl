@@ -24,14 +24,14 @@ const IDL_TYP_LONG64 =     14
 const IDL_TYP_ULONG64 =    15
 
 # translating IDL/C types to julia
-typealias IDL_MEMINT Int
-typealias IDL_UMEMINT UInt
-typealias UCHAR Cuchar
+const IDL_MEMINT  = Int
+const IDL_UMEMINT = UInt
+const UCHAR = Cuchar
 # NOTE: IDL_ARRAY_DIM is fixed length array IDL_MEMINT[IDL_MAX_ARRAY_DIM] (i.e, Int[8])
-typealias IDL_ARRAY_DIM Ptr{IDL_MEMINT}
-typealias IDL_ARRAY_FREE_CB Ptr{Void}
-typealias IDL_FILEINT Int     # possibly different on Windows
-typealias IDL_STRING_SLEN_T Cint
+const IDL_ARRAY_DIM = Ptr{IDL_MEMINT}
+const IDL_ARRAY_FREE_CB = Ptr{Nothing}
+const IDL_FILEINT = Int     # possibly different on Windows
+const IDL_STRING_SLEN_T = Cint
 const IDL_STRING_MAX_SLEN = 2147483647   # should you check this?
 
 # /***** IDL_VARIABLE flag values ********/
@@ -60,12 +60,10 @@ function idl_type(jl_t)
         idl_t = IDL_TYP_FLOAT
     elseif t == Float64
         idl_t = IDL_TYP_DOUBLE
-    elseif t == Complex64
+    elseif t == ComplexF64
         idl_t = IDL_TYP_COMPLEX
     elseif t <: AbstractString
         idl_t = IDL_TYP_STRING
-    elseif t == Complex128
-        idl_t = IDL_TYP_DCOMPLEX
     elseif t == UInt16
         idl_t = IDL_TYP_UINT
     elseif t == UInt32
@@ -93,11 +91,11 @@ function jl_type(idl_t)
     elseif idl_t == IDL_TYP_DOUBLE
         jl_t = Float64
     elseif idl_t == IDL_TYP_COMPLEX
-        jl_t = Complex64
+        jl_t = ComplexF64
     elseif idl_t == IDL_TYP_STRING
         jl_t = Compat.String
-    elseif idl_t == IDL_TYP_DCOMPLEX
-        jl_t = Complex128
+        #elseif idl_t == IDL_TYP_DCOMPLEX
+        #    jl_t = Complex128
     elseif idl_t == IDL_TYP_UINT
         jl_t = UInt16
     elseif idl_t == IDL_TYP_ULONG
@@ -116,8 +114,8 @@ end
 #*************************************************************************************************#
 # some IDL types from extern.jl
 # sizeof(buf) is max size of IDL_ALLTYPES Union (64x2=128 bits or 16 bytes on all platforms)
-typealias IDL_ALLTYPES UInt128
-immutable IDL_Variable
+const IDL_ALLTYPES = UInt128
+struct IDL_Variable
     vtype::UCHAR
     flags::UCHAR
     flags2::UCHAR
@@ -125,7 +123,7 @@ immutable IDL_Variable
 end
 
 # works as a fixed length array
-immutable IDL_DIMS
+struct IDL_DIMS
     d1::IDL_MEMINT
     d2::IDL_MEMINT
     d3::IDL_MEMINT
@@ -139,7 +137,7 @@ end
 dims(d::IDL_DIMS) = (d.d1,d.d2,d.d3,d.d4,d.d5,d.d6,d.d7,d.d8)
 dims(d::IDL_DIMS, ndims::Integer) = (d.d1,d.d2,d.d3,d.d4,d.d5,d.d6,d.d7,d.d8)[1:ndims]
 
-immutable IDL_Array
+struct IDL_Array
     elt_len::IDL_MEMINT                 # Length of element in char units
     arr_len::IDL_MEMINT                 # Length of entire array (char)
     n_elts::IDL_MEMINT                  # total # of elements
@@ -153,19 +151,19 @@ immutable IDL_Array
     data_guard::IDL_MEMINT              # Guard longword
 end
 
-immutable IDL_String
+struct IDL_String
     slen::IDL_STRING_SLEN_T             # Length of string, 0 for null
     stype::Cshort                       # type of string, static or dynamic
     s::Ptr{Cchar}                       # Addr of string
-    IDL_String() = new(0, 0, Base.unsafe_convert(Ptr{Cchar}, Array(Cchar, IDL_RPC_MAX_STRLEN)))
+    IDL_String() = new(0, 0, Base.unsafe_convert(Ptr{Cchar}, Array{Cchar}(undef, IDL_RPC_MAX_STRLEN)))
 end
 
 # From idl_rpc.h
 const IDL_RPC_MAX_STRLEN = 512		# max string length
-immutable IDL_RPC_LINE_S
+struct IDL_RPC_LINE_S
     flags::Cint
     buf::Ptr{Cchar}
-    IDL_RPC_LINE_S() = new(0, Base.unsafe_convert(Ptr{Cchar}, Array(Cchar, IDL_RPC_MAX_STRLEN)))
+    IDL_RPC_LINE_S() = new(0, Base.unsafe_convert(Ptr{Cchar}, Array{Cchar}(undef, IDL_RPC_MAX_STRLEN)))
 end
 
 const IDL_TOUT_F_STDERR = 1	# Output to stderr instead of stdout

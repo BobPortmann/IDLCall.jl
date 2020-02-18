@@ -1,4 +1,3 @@
-
 # These routines were modified from similar routines in MATLAB.jl
 # E.G., @mput, @mget, _mput_multi, _mget_multi, make_getvar_statement
 
@@ -30,7 +29,7 @@ function make_getvar_statement(ex::Expr)
         if ex.head == :kw
             error("Must call @get_var without parenthesis if using statements")
         else
-            erorr("Invalid expression for @get_var: " * string(ex))
+            error("Invalid expression for @get_var: " * string(ex))
         end
     end
     v::Symbol = ex.args[1]
@@ -39,7 +38,7 @@ function make_getvar_statement(ex::Expr)
 end
 
 function get_var_multi(vs::Union{Symbol, Expr}...)
-    # NOTE: I supressed output by adding :nothing
+    # supress output by adding :nothing
     nv = length(vs)
     if nv == 1
         stmt = make_getvar_statement(vs[1])
@@ -56,5 +55,3 @@ end
 macro get_var(vs...)
     esc(get_var_multi(vs...))
 end
-
-# END: routines modified from similar routines in MATLAB.jl
